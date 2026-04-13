@@ -96,18 +96,41 @@ export function ItemDetail() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Request Equipment</CardTitle>
+            <CardTitle>
+              {item.isReturnable ? "Request Equipment" : "Request Consumable"}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center py-8">
-            {item.availability && item.availability.availableUnits > 0 ? (
-              <Link to={`/borrower/request-loan/${item.id}`} className="w-full">
-                <Button className="w-full" size="lg">
-                  Request This Item
-                </Button>
-              </Link>
+          <CardContent className="flex flex-col items-center justify-center py-8 gap-4">
+            {/* Equipment: available only if availableUnits > 0
+                Consumable: available as long as quantity > 0 (no availability block from API) */}
+            {(item.isReturnable
+              ? (item.availability?.availableUnits ?? 0) > 0
+              : item.quantity > 0) ? (
+              <>
+                {item.isReturnable && item.availability && (
+                  <p className="text-sm text-muted-foreground">
+                    {item.availability.availableUnits} of {item.availability.totalUnits} units available
+                  </p>
+                )}
+                {!item.isReturnable && (
+                  <p className="text-sm text-muted-foreground">
+                    {item.quantity} units in stock
+                  </p>
+                )}
+                <Link to={`/borrower/request-loan/${item.id}`} className="w-full">
+                  <Button className="w-full" size="lg">
+                    Request This Item
+                  </Button>
+                </Link>
+              </>
             ) : (
-              <div className="text-center">
-                <p className="text-muted-foreground">No availability</p>
+              <div className="text-center space-y-1">
+                <p className="font-medium">Out of stock</p>
+                <p className="text-sm text-muted-foreground">
+                  {item.isReturnable
+                    ? "All units are currently on loan."
+                    : "No stock remaining."}
+                </p>
               </div>
             )}
           </CardContent>

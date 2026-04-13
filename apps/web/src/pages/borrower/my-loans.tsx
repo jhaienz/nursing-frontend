@@ -14,8 +14,7 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Input } from "@workspace/ui/components/input"
 import { LoanStatus, type Loan } from "@/lib/types"
 import { Skeleton } from "@workspace/ui/components/skeleton"
-import { Link } from "react-router-dom"
-import { ChevronLeft } from "lucide-react"
+import { Search } from "lucide-react"
 
 const STATUS_VARIANT: Record<
   LoanStatus,
@@ -30,51 +29,60 @@ const STATUS_VARIANT: Record<
 }
 
 export function MyLoans() {
-  const [username, setUsername] = useState("")
+  const [input, setInput] = useState("")
   const [submittedUsername, setSubmittedUsername] = useState("")
 
-  const { data: loans, isLoading } = useLoansByBorrower(submittedUsername)
+  const {
+    data: loans,
+    isLoading,
+    isError,
+    isFetched,
+  } = useLoansByBorrower(submittedUsername)
+
+  function handleSearch() {
+    const trimmed = input.trim()
+    if (trimmed) setSubmittedUsername(trimmed)
+  }
 
   return (
-    <div className="space-y-6 px-6">
-      <div className="flex items-center gap-4">
-        <Link to="/borrower">
-          <Button variant="ghost" size="sm">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </Link>
+    <div className="space-y-6">
+      <div>
         <h1 className="text-3xl font-bold">My Loans</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Enter your username to look up your loan history and status.
+        </p>
       </div>
 
-      {/* Username lookup */}
+      {/* Lookup card */}
       <Card>
         <CardHeader>
           <CardTitle>Look Up Your Loans</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <Input
               placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && setSubmittedUsername(username)
-              }
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="max-w-sm"
             />
-            <Button onClick={() => setSubmittedUsername(username)}>
+            <Button onClick={handleSearch} disabled={!input.trim()}>
+              <Search className="mr-2 h-4 w-4" />
               Search
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Loans Table */}
+      {/* Results */}
       {submittedUsername && (
         <Card>
           <CardHeader>
-            <CardTitle>Loans for {submittedUsername}</CardTitle>
+            <CardTitle>
+              Loans for{" "}
+              <span className="font-mono text-primary">@{submittedUsername}</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -83,17 +91,24 @@ export function MyLoans() {
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
-            ) : loans?.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No loans found.</p>
+            ) : isError ? (
+              <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+                Failed to load loans. Please try again.
+              </div>
+            ) : isFetched && (!loans || loans.length === 0) ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                No loans found for <span className="font-medium">@{submittedUsername}</span>.
+              </p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Qty</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>Requested</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -117,9 +132,12 @@ function LoanRow({ loan }: { loan: Loan }) {
   return (
     <TableRow>
       <TableCell className="font-medium">{loan.item.name}</TableCell>
+      <TableCell className="text-muted-foreground">
+        {loan.item.isReturnable ? "Equipment" : "Consumable"}
+      </TableCell>
       <TableCell>{loan.quantity}</TableCell>
       <TableCell>
-        {loan.dueDate ? new Date(loan.dueDate).toLocaleDateString() : "-"}
+        {loan.dueDate ? new Date(loan.dueDate).toLocaleDateString() : "—"}
       </TableCell>
       <TableCell>
         <Badge variant={STATUS_VARIANT[loan.status]}>{loan.status}</Badge>

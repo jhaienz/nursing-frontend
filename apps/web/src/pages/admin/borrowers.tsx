@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useBorrowers, useDeleteBorrower } from "@/lib/hooks/use-borrowers"
+import type { Borrower } from "@/lib/types"
 import { Button } from "@workspace/ui/components/button"
 import {
   Table,
@@ -10,17 +11,19 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card"
-import { CreateBorrowerDialog } from "@/components/dialogs/create-borrower-dialog"
-import { EditBorrowerDialog } from "@/components/dialogs/edit-borrower-dialog"
-import type { Borrower } from "@/lib/types"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { Trash2, Edit2 } from "lucide-react"
+import { CreateBorrowerDialog } from "@/components/dialogs/create-borrower-dialog"
+import { EditBorrowerDialog } from "@/components/dialogs/edit-borrower-dialog"
+import { ConfirmDialog } from "@/components/dialogs/confirm-dialog"
 
 export function BorrowersPage() {
   const { data: borrowers, isLoading } = useBorrowers()
-  const { mutate: deleteBorrower } = useDeleteBorrower()
+  const { mutate: deleteBorrower, isPending: deleting } = useDeleteBorrower()
+
   const [openCreate, setOpenCreate] = useState(false)
   const [editingBorrower, setEditingBorrower] = useState<Borrower | null>(null)
+  const [deletingBorrower, setDeletingBorrower] = useState<Borrower | null>(null)
 
   return (
     <div className="space-y-6">
@@ -40,6 +43,10 @@ export function BorrowersPage() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
+          ) : borrowers?.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No borrowers yet. Click "Create Borrower" to add one.
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -70,21 +77,23 @@ export function BorrowersPage() {
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(borrower.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditingBorrower(borrower)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteBorrower(borrower.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingBorrower(borrower)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeletingBorrower(borrower)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -94,12 +103,28 @@ export function BorrowersPage() {
         </CardContent>
       </Card>
 
+      {/* Create dialog */}
       <CreateBorrowerDialog open={openCreate} onOpenChange={setOpenCreate} />
+
+      {/* Edit dialog */}
       {editingBorrower && (
         <EditBorrowerDialog
           borrower={editingBorrower}
           open={!!editingBorrower}
           onOpenChange={(open) => !open && setEditingBorrower(null)}
+        />
+      )}
+
+      {/* Delete confirmation dialog */}
+      {deletingBorrower && (
+        <ConfirmDialog
+          open={!!deletingBorrower}
+          onOpenChange={(open) => !open && setDeletingBorrower(null)}
+          title="Delete Borrower"
+          description={`Are you sure you want to delete "${deletingBorrower.fullName}" (@${deletingBorrower.username})? This action cannot be undone.`}
+          confirmLabel="Delete"
+          isPending={deleting}
+          onConfirm={() => deleteBorrower(deletingBorrower.id)}
         />
       )}
     </div>

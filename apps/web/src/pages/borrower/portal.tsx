@@ -30,11 +30,11 @@ export function BorrowerPortal() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-3xl font-bold">Equipment Catalog</h1>
-        <Link to="/borrower/my-loans">
-          <Button variant="outline">My Loans</Button>
-        </Link>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Browse available equipment and consumables. Click any item to request it.
+        </p>
       </div>
 
       {/* Filters */}
