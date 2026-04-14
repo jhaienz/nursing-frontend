@@ -65,7 +65,7 @@ export function AppRoutes() {
       </Route>
 
       {/* Catch all */}
-      <Route path="/" element={<Navigate to="/admin" replace />} />
+      <Route path="/" element={<Navigate to="/borrower" replace />} />
     </Routes>
   )
 }
